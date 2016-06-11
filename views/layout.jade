@@ -1,0 +1,13 @@
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    link(rel='icon', type='image/png', sizes='192x192', href='/images/android-icon-192x192.png')
+  body
+    block content
+
+    script(src='/javascripts/jquery.min.js')
+    script(src='/javascripts/socket.io.min.js')
+
+    block page_scripts
