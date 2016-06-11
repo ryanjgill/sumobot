@@ -159,7 +159,7 @@ function emitUsersCount(io) {
 
 function checkForZeroUsers(io) {
   if (io.engine.clientsCount === 0) {
-    stopVehicle()
+    stop()
     updateUserLeds(io.engine.clientsCount)
   }
 }
