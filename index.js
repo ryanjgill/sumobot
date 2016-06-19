@@ -13,15 +13,15 @@ const app = express()
 const httpServer = require('http').Server(app)
 const io = require('socket.io')(httpServer)
 const os = require('os')
+const address = os.networkInterfaces()['wlan0'][0].address
+const port = 3000
 
 const tessel = require('tessel')
 
 // leds to display if user is connected
 const usersLed = tessel.led[2]
 const noUsersLed = tessel.led[3]
-
-// start with noUsersLed turned on
-noUsersLed.on()
+let noUserBlinkInterval
 
 // motor pins
 const left_motor = tessel.port.A.pwm[0]
@@ -76,8 +76,52 @@ function stop() {
   rightMotor(0)
 }
 
-const address = os.networkInterfaces()['wlan0'][0].address
-const port = 3000
+function blinkNoUsersLed() {
+  clearInterval(noUserBlinkInterval)
+
+  noUserBlinkInterval = setInterval(function () {
+    noUsersLed.toggle()
+  }, 1000/8)
+}
+
+// indicate if any users are connected
+function updateUserLeds(usersCount) {
+  if (usersCount > 0) {
+    usersLed.on()
+    clearInterval(noUserBlinkInterval)
+    noUsersLed.off()
+  } else {
+    usersLed.off()
+    blinkNoUsersLed()
+    console.log('Awaiting users to join...')
+  }
+}
+
+// emit usersCount to all sockets
+function emitUsersCount(io) {
+  io.sockets.emit('usersCount', {
+    totalUsers: io.engine.clientsCount
+  })
+
+  updateUserLeds(io.engine.clientsCount)
+}
+
+function checkForZeroUsers(io) {
+  if (io.engine.clientsCount === 0) {
+    stop()
+    updateUserLeds(io.engine.clientsCount)
+  }
+}
+
+// emit signal received to all sockets
+function emitSignalReceived(io, message) {
+  io.sockets.emit('signal:received', {
+    date: new Date().getTime(),
+    value: message || 'Signal received.'
+  })
+}
+
+updateUserLeds()
 
 httpServer.listen(port)
 
@@ -136,43 +180,7 @@ io.on('connection', (socket) => {
   })
 })
 
-// indicate if any users are connected
-function updateUserLeds(usersCount) {
-  if (usersCount > 0) {
-    usersLed.on()
-    noUsersLed.off()
-  } else {
-    usersLed.off()
-    noUsersLed.on()
-    console.log('Awaiting users to join...')
-  }
-}
-
-// emit usersCount to all sockets
-function emitUsersCount(io) {
-  io.sockets.emit('usersCount', {
-    totalUsers: io.engine.clientsCount
-  })
-
-  updateUserLeds(io.engine.clientsCount)
-}
-
-function checkForZeroUsers(io) {
-  if (io.engine.clientsCount === 0) {
-    stop()
-    updateUserLeds(io.engine.clientsCount)
-  }
-}
-
-// emit signal received to all sockets
-function emitSignalReceived(io, message) {
-  io.sockets.emit('signal:received', {
-    date: new Date().getTime(),
-    value: message || 'Signal received.'
-  })
-}
-
-// setting app stuff
+// setting app title
 app.locals.title = 'Tessel 2 SumoBot'
 
 // view engine setup
@@ -194,6 +202,5 @@ app.get('/', function(req, res, next) {
   res.send('/public/index.html')
 })
 
-
-// get Tessel 2 IP address via cli with `t2 wifi`
+// log Tessel address
 console.log(`Server running at http://${address}:${port}`)
