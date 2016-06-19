@@ -27,27 +27,24 @@ let noUserBlinkInterval
 const left_motor = tessel.port.A.pwm[0]
 const right_motor = tessel.port.A.pwm[1]
 
-const pwmFreq = 300
-const cw = .1
-const ccw = .9
+const pwmFreq = 50
+const cw = .03
+const ccw = .12
 
 tessel.pwmFrequency(pwmFreq)
 
 left_motor.pwmDutyCycle(0)
 right_motor.pwmDutyCycle(0)
 
-
 function leftMotor(dutyCycle) {
   let d = dutyCycle || 0
 
-  left_motor.pwmDutyCycle(0)
   left_motor.pwmDutyCycle(d)
 }
 
 function rightMotor(dutyCycle) {
   let d = dutyCycle || 0
 
-  right_motor.pwmDutyCycle(0)
   right_motor.pwmDutyCycle(d)
 }
 
@@ -72,8 +69,8 @@ function spinRight() {
 }
 
 function stop() {
-  leftMotor(0)
-  rightMotor(0)
+  leftMotor()
+  rightMotor()
 }
 
 function blinkNoUsersLed() {
